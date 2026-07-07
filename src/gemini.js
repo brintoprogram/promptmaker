@@ -116,12 +116,22 @@ export async function generatePrompts({
   userInstructions,
   mediaType = 'image',
   targetPlatform = 'flux',
+  backgroundSource = 'image2',
   customSystemPrompt
 }) {
   if (!apiKey) throw new Error("A API Key é obrigatória.");
 
   let finalSystemInstruction = customSystemPrompt || `Você é um Engenheiro de Prompts Especialista Sênior... (Padrão de Fallback)`;
   
+  let backgroundInstruction = '';
+  if (backgroundSource === 'image1') {
+    backgroundInstruction = 'Mantenha e descreva o exato mesmo cenário/fundo (background) que aparece na Imagem 1 (Modelo Base). NÃO use o cenário da Imagem 2.';
+  } else if (backgroundSource === 'image2') {
+    backgroundInstruction = 'Use e descreva o cenário/ambiente (background) que aparece na Imagem 2 (Referência). Ignore o cenário da Imagem 1.';
+  } else {
+    backgroundInstruction = 'O usuário não quer usar os cenários base. Crie um cenário condizente com a ação ou siga estritamente as instruções adicionais do usuário.';
+  }
+
   // Substituir as variáveis do contexto no prompt customizado do usuário
   finalSystemInstruction = finalSystemInstruction
     .replace('{{modelName}}', modelName || 'A modelo')
@@ -129,7 +139,8 @@ export async function generatePrompts({
     .replace('{{mediaType}}', mediaType === 'image' ? 'Geração de Imagens Estáticas' : 'Geração de Vídeo')
     .replace('{{workflow}}', workflow.toUpperCase())
     .replace('{{userInstructions}}', userInstructions || 'Nenhuma.')
-    .replace('{{targetPlatform}}', targetPlatform.toUpperCase());
+    .replace('{{targetPlatform}}', targetPlatform.toUpperCase())
+    .replace('{{backgroundInstruction}}', backgroundInstruction);
 
   if (aiProvider === 'gemini') {
       const genAI = new GoogleGenerativeAI(apiKey);

@@ -29,12 +29,13 @@ O usuário irá enviar duas imagens em anexo (Imagem 1 = Modelo Base, Imagem 2 =
 
 REGRA CRÍTICA:
 NUNCA descreva excessivamente as características físicas do rosto e do corpo da modelo no prompt final, pois a Imagem 1 já fornece a aparência exata. Apenas cite detalhes mínimos se for estritamente necessário para reforçar.
-Foque a descrição pesadamente na AÇÃO, CENÁRIO, ROUPAS (Imagem 2), ILUMINAÇÃO e TEXTURAS.
-
 O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas. Exemplo: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
 
+CENÁRIO (IMPORTANTE):
+{{backgroundInstruction}}
+
 PLATAFORMA ALVO: {{targetPlatform}}
-Baseie a estrutura do seu prompt EXCLUSIVAMENTE nas melhores práticas da plataforma alvo acima. (Ex: Midjourney usa vírgulas e parâmetros, Flux usa linguagem natural narrativa, Stable Diffusion usa tags rigorosas, Nano Banana usa foco em transição).
+Baseie a estrutura do seu prompt EXCLUSIVAMENTE nas melhores práticas da plataforma alvo acima. Crie prompts abertos e flexíveis (não restrinja muito o gerador de IA). Mantenha as coisas com foco em UGC. (Ex: Midjourney usa vírgulas e parâmetros, Flux usa linguagem natural narrativa, Stable Diffusion usa tags rigorosas, Nano Banana usa foco em transição).
 
 A resposta DEVE SER UM JSON ESTRITO no seguinte formato:
 {
@@ -65,6 +66,7 @@ export default function App() {
   const [workflow, setWorkflow] = useState('pose'); 
   const [targetPlatform, setTargetPlatform] = useState('nano_banana'); // 'flux' | 'midjourney' | 'stable_diffusion' | 'nano_banana'
   const [refImage, setRefImage] = useState(null);
+  const [backgroundSource, setBackgroundSource] = useState('image2'); // 'image1' | 'image2' | 'none'
   const [userInstructions, setUserInstructions] = useState('');
 
   // Execution States
@@ -186,6 +188,7 @@ export default function App() {
         userInstructions,
         mediaType,
         targetPlatform,
+        backgroundSource,
         customSystemPrompt
       });
 
@@ -200,6 +203,7 @@ export default function App() {
         workflow,
         mediaType,
         targetPlatform,
+        backgroundSource,
         userInstructions,
         results: output
       };
@@ -225,6 +229,7 @@ export default function App() {
     setWorkflow(item.workflow);
     setMediaType(item.mediaType || 'image');
     setTargetPlatform(item.targetPlatform || 'nano_banana');
+    setBackgroundSource(item.backgroundSource || 'image2');
     setUserInstructions(item.userInstructions || '');
     setResults(item.results);
     setRightTab('results');
@@ -517,7 +522,16 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{marginTop: '1.5rem'}}>
+                <label className="form-label">De onde a IA deve copiar o cenário?</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button className={`tab-btn ${backgroundSource === 'image2' ? 'active' : ''}`} onClick={() => setBackgroundSource('image2')}>Da Imagem de Referência (Img 2)</button>
+                  <button className={`tab-btn ${backgroundSource === 'image1' ? 'active' : ''}`} onClick={() => setBackgroundSource('image1')}>Da Imagem da Modelo (Img 1)</button>
+                  <button className={`tab-btn ${backgroundSource === 'none' ? 'active' : ''}`} onClick={() => setBackgroundSource('none')}>Ignorar os cenários / Vou descrever</button>
+                </div>
+              </div>
+
+              <div className="form-group" style={{marginTop: '1.5rem'}}>
                 <label className="form-label">Instruções Adicionais</label>
                 <textarea className="form-input form-textarea" placeholder={workflowInfo.descPlaceholder} value={userInstructions} onChange={(e) => setUserInstructions(e.target.value)} />
               </div>
