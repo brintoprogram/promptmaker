@@ -14,14 +14,15 @@ import {
   Eye, 
   EyeOff, 
   AlertCircle,
-  HelpCircle,
   Video,
   Wand2,
   Image,
   Layers,
-  Cpu
+  Cpu,
+  Wifi,
+  RefreshCw
 } from 'lucide-react';
-import { generatePrompts, extractModelFeatures } from './gemini';
+import { generatePrompts, extractModelFeatures, testConnection } from './gemini';
 
 export default function App() {
   // Navigation State
@@ -32,6 +33,8 @@ export default function App() {
   const [openAiApiKey, setOpenAiApiKey] = useState(() => localStorage.getItem('openai_api_key') || '');
   const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('ai_provider') || 'gemini'); // 'gemini' | 'openai'
   const [showApiKey, setShowApiKey] = useState(false);
+  const [testStatus, setTestStatus] = useState({ gemini: null, openai: null });
+  const [testError, setTestError] = useState({ gemini: null, openai: null });
   
   // Base Model
   const [modelName, setModelName] = useState(() => localStorage.getItem('model_name') || 'Sophia');
@@ -39,8 +42,8 @@ export default function App() {
   const [modelImage, setModelImage] = useState(() => localStorage.getItem('model_image') || null);
 
   // Workflow and Options
-  const [mediaType, setMediaType] = useState('image'); // 'image' | 'video'
-  const [workflow, setWorkflow] = useState('pose'); // 'pose' | 'clothing' | 'background' | 'style' | 'action'
+  const [mediaType, setMediaType] = useState('image');
+  const [workflow, setWorkflow] = useState('pose'); 
   const [refImage, setRefImage] = useState(null);
   const [userInstructions, setUserInstructions] = useState('');
 
@@ -51,7 +54,7 @@ export default function App() {
   const [results, setResults] = useState(null);
   
   // Right Panel Tabs
-  const [rightTab, setRightTab] = useState('results'); // 'results' | 'history'
+  const [rightTab, setRightTab] = useState('results');
   const [activeResultTab, setActiveResultTab] = useState('flux');
   const [copiedField, setCopiedField] = useState(null);
 
@@ -77,40 +80,49 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ai_provider', aiProvider); }, [aiProvider]);
   useEffect(() => { localStorage.setItem('prompt_studio_history', JSON.stringify(history)); }, [history]);
 
-  // Adjust default workflow when media type changes
   useEffect(() => {
-    if (mediaType === 'video' && (workflow === 'clothing')) {
-      setWorkflow('action'); // Fallback workflow for video
-    }
+    if (mediaType === 'video' && (workflow === 'clothing')) setWorkflow('action'); 
   }, [mediaType]);
 
-  // Handle Image Upload
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 4 * 1024 * 1024) {
-      alert("A imagem é muito grande. Escolha uma imagem menor que 4MB.");
+      alert("A imagem é muito grande. Escolha uma menor que 4MB.");
       return;
     }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setter(reader.result);
-    };
+    reader.onloadend = () => setter(reader.result);
     reader.readAsDataURL(file);
   };
 
-  // Feature Extraction
+  const handleTestConnection = async (provider) => {
+    const key = provider === 'gemini' ? geminiApiKey : openAiApiKey;
+    if (!key) {
+      setTestError({ ...testError, [provider]: "Insira a chave primeiro." });
+      return;
+    }
+    setTestStatus({ ...testStatus, [provider]: 'loading' });
+    setTestError({ ...testError, [provider]: null });
+    
+    try {
+      await testConnection({ apiKey: key, aiProvider: provider });
+      setTestStatus({ ...testStatus, [provider]: 'success' });
+      setTimeout(() => setTestStatus((prev) => ({ ...prev, [provider]: null })), 3000);
+    } catch (e) {
+      setTestStatus({ ...testStatus, [provider]: 'error' });
+      setTestError({ ...testError, [provider]: e.message });
+    }
+  };
+
   const handleExtractFeatures = async () => {
     if (!modelImage) {
       setError("Por favor, faça upload da foto da modelo primeiro.");
       return;
     }
-    
     const activeKey = aiProvider === 'gemini' ? geminiApiKey : openAiApiKey;
     if (!activeKey) {
-      setError(`Por favor, configure sua chave da ${aiProvider.toUpperCase()} nas Configurações.`);
+      setError(`Sua API Key da ${aiProvider.toUpperCase()} não está configurada! Vá em Configurações Globais.`);
       return;
     }
 
@@ -130,11 +142,10 @@ export default function App() {
     }
   };
 
-  // Prompt Generation
   const handleGenerate = async () => {
     const activeKey = aiProvider === 'gemini' ? geminiApiKey : openAiApiKey;
     if (!activeKey) {
-      setError(`Por favor, configure sua chave da API (${aiProvider}) na aba de Configurações Globais.`);
+      setError(`Sua API Key da ${aiProvider.toUpperCase()} não está configurada! Vá em Configurações Globais.`);
       return;
     }
     
@@ -199,9 +210,7 @@ export default function App() {
   };
 
   const clearHistory = () => {
-    if (window.confirm("Deseja realmente limpar todo o histórico de gerações?")) {
-      setHistory([]);
-    }
+    if (window.confirm("Deseja realmente limpar todo o histórico de gerações?")) setHistory([]);
   };
 
   const getWorkflowInfo = () => {
@@ -223,6 +232,7 @@ export default function App() {
   };
 
   const workflowInfo = getWorkflowInfo();
+  const providerLabel = aiProvider === 'gemini' ? 'Gemini 1.5' : 'GPT-4o';
 
   return (
     <div className="app-container">
@@ -247,16 +257,10 @@ export default function App() {
         </div>
         
         <nav className="top-nav">
-          <button 
-            className={`nav-btn ${currentTab === 'studio' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('studio')}
-          >
+          <button className={`nav-btn ${currentTab === 'studio' ? 'active' : ''}`} onClick={() => setCurrentTab('studio')}>
             <Layers size={18} /> Studio Workspace
           </button>
-          <button 
-            className={`nav-btn ${currentTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('settings')}
-          >
+          <button className={`nav-btn ${currentTab === 'settings' ? 'active' : ''}`} onClick={() => setCurrentTab('settings')}>
             <Settings size={18} /> Configurações Globais
           </button>
         </nav>
@@ -272,7 +276,7 @@ export default function App() {
             
             <p className="settings-desc">
               Escolha qual motor de Inteligência Artificial você deseja usar para ler as imagens de referência 
-              e gerar seus prompts. Modelos mais fortes compreendem referências com muito mais qualidade.
+              e gerar seus prompts. (O modelo selecionado será usado no botão "Extrair com IA" e "Gerar Prompts").
             </p>
 
             <div className="provider-selector">
@@ -288,7 +292,7 @@ export default function App() {
                 onClick={() => setAiProvider('openai')}
               >
                 <h3>OpenAI (GPT-4o)</h3>
-                <p>Melhor compreensão visual do mercado (Simulado).</p>
+                <p>Melhor compreensão visual do mercado e aderência aos prompts gerados.</p>
               </div>
             </div>
 
@@ -303,19 +307,22 @@ export default function App() {
                   value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
                 />
-                <button 
-                  type="button"
-                  className="eye-btn"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
+                <button type="button" className="eye-btn" onClick={() => setShowApiKey(!showApiKey)}>
                   {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="api-key-link">Obter chave do Gemini ↗</a>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="api-key-link">Obter chave do Gemini ↗</a>
+                <button className="btn-extract" onClick={() => handleTestConnection('gemini')} disabled={testStatus.gemini === 'loading'}>
+                  {testStatus.gemini === 'loading' ? <RefreshCw size={14} className="spin" /> : <Wifi size={14} />} Salvar e Testar
+                </button>
+              </div>
+              {testStatus.gemini === 'success' && <p style={{color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem'}}>Conexão bem-sucedida!</p>}
+              {testError.gemini && <p style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem'}}>{testError.gemini}</p>}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">OpenAI API Key (Opcional)</label>
+            <div className="form-group" style={{marginTop: '2rem'}}>
+              <label className="form-label">OpenAI API Key (GPT-4o)</label>
               <div style={{ position: 'relative' }}>
                 <input 
                   type={showApiKey ? "text" : "password"} 
@@ -325,14 +332,18 @@ export default function App() {
                   value={openAiApiKey}
                   onChange={(e) => setOpenAiApiKey(e.target.value)}
                 />
-                <button 
-                  type="button"
-                  className="eye-btn"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
+                <button type="button" className="eye-btn" onClick={() => setShowApiKey(!showApiKey)}>
                   {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="api-key-link">Obter chave da OpenAI ↗</a>
+                <button className="btn-extract" onClick={() => handleTestConnection('openai')} disabled={testStatus.openai === 'loading'}>
+                  {testStatus.openai === 'loading' ? <RefreshCw size={14} className="spin" /> : <Wifi size={14} />} Salvar e Testar
+                </button>
+              </div>
+              {testStatus.openai === 'success' && <p style={{color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem'}}>Conexão bem-sucedida!</p>}
+              {testError.openai && <p style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem'}}>{testError.openai}</p>}
             </div>
 
           </div>
@@ -345,7 +356,6 @@ export default function App() {
           <div className="left-panel">
             <div className="glass studio-card">
               
-              {/* Modelo Base */}
               <div className="section-title">
                 <Sparkles size={20} />
                 <h2>Passo 1: Sua Modelo Base</h2>
@@ -353,13 +363,7 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Nome da Modelo</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="Ex: Sophia, Isabella" 
-                  value={modelName}
-                  onChange={(e) => setModelName(e.target.value)}
-                />
+                <input type="text" className="form-input" placeholder="Ex: Sophia, Isabella" value={modelName} onChange={(e) => setModelName(e.target.value)} />
               </div>
 
               <div className="form-group">
@@ -374,12 +378,7 @@ export default function App() {
                     <>
                       <Upload className="upload-icon" size={32} />
                       <p className="upload-text">Arraste ou <span>clique para subir</span></p>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                        onChange={(e) => handleImageUpload(e, setModelImage)}
-                      />
+                      <input type="file" accept="image/*" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={(e) => handleImageUpload(e, setModelImage)} />
                     </>
                   )}
                 </div>
@@ -388,45 +387,27 @@ export default function App() {
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <label className="form-label" style={{ margin: 0 }}>Características Visuais (Prompt Base)</label>
-                  <button 
-                    className="btn-extract"
-                    disabled={extractingFeatures || !modelImage}
-                    onClick={handleExtractFeatures}
-                  >
+                  <button className="btn-extract" disabled={extractingFeatures || !modelImage} onClick={handleExtractFeatures}>
                     {extractingFeatures ? <RefreshCw size={14} className="spin" /> : <Wand2 size={14} />}
-                    Extrair com IA
+                    Extrair ({providerLabel})
                   </button>
                 </div>
-                <textarea 
-                  className="form-input form-textarea" 
-                  placeholder="Descreva as características da modelo ou use a varredura com IA acima."
-                  value={modelDesc}
-                  onChange={(e) => setModelDesc(e.target.value)}
-                />
+                <textarea className="form-input form-textarea" placeholder="Descreva as características da modelo ou use a varredura com IA acima." value={modelDesc} onChange={(e) => setModelDesc(e.target.value)} />
               </div>
 
               <hr className="divider" />
 
-              {/* Tipo de Mídia e Ação */}
               <div className="section-title">
                 <Sparkles size={20} />
                 <h2>Passo 2: Tipo e Ação</h2>
               </div>
 
               <div className="media-selector">
-                <button 
-                  className={`media-btn ${mediaType === 'image' ? 'active' : ''}`}
-                  onClick={() => { setMediaType('image'); setWorkflow('pose'); }}
-                >
-                  <Image size={18} />
-                  <span>Imagens</span>
+                <button className={`media-btn ${mediaType === 'image' ? 'active' : ''}`} onClick={() => { setMediaType('image'); setWorkflow('pose'); }}>
+                  <Image size={18} /><span>Imagens</span>
                 </button>
-                <button 
-                  className={`media-btn ${mediaType === 'video' ? 'active' : ''}`}
-                  onClick={() => { setMediaType('video'); setWorkflow('action'); }}
-                >
-                  <Video size={18} />
-                  <span>Vídeos AI</span>
+                <button className={`media-btn ${mediaType === 'video' ? 'active' : ''}`} onClick={() => { setMediaType('video'); setWorkflow('action'); }}>
+                  <Video size={18} /><span>Vídeos AI</span>
                 </button>
               </div>
 
@@ -434,31 +415,25 @@ export default function App() {
                 {mediaType === 'image' ? (
                   <>
                     <div className={`workflow-card ${workflow === 'pose' ? 'active' : ''}`} onClick={() => setWorkflow('pose')}>
-                      <ImageIcon className="workflow-icon" size={22} />
-                      <h3>Copiar Pose</h3>
+                      <ImageIcon className="workflow-icon" size={22} /><h3>Copiar Pose</h3>
                     </div>
                     <div className={`workflow-card ${workflow === 'clothing' ? 'active' : ''}`} onClick={() => setWorkflow('clothing')}>
-                      <Shirt className="workflow-icon" size={22} />
-                      <h3>Trocar Roupa</h3>
+                      <Shirt className="workflow-icon" size={22} /><h3>Trocar Roupa</h3>
                     </div>
                     <div className={`workflow-card ${workflow === 'background' ? 'active' : ''}`} onClick={() => setWorkflow('background')}>
-                      <Map className="workflow-icon" size={22} />
-                      <h3>Mudar Cenário</h3>
+                      <Map className="workflow-icon" size={22} /><h3>Mudar Cenário</h3>
                     </div>
                     <div className={`workflow-card ${workflow === 'style' ? 'active' : ''}`} onClick={() => setWorkflow('style')}>
-                      <Palette className="workflow-icon" size={22} />
-                      <h3>Copiar Estilo</h3>
+                      <Palette className="workflow-icon" size={22} /><h3>Copiar Estilo</h3>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className={`workflow-card ${workflow === 'action' ? 'active' : ''}`} onClick={() => setWorkflow('action')}>
-                      <ImageIcon className="workflow-icon" size={22} />
-                      <h3>Gerar Ação</h3>
+                      <ImageIcon className="workflow-icon" size={22} /><h3>Gerar Ação</h3>
                     </div>
                     <div className={`workflow-card ${workflow === 'background' ? 'active' : ''}`} onClick={() => setWorkflow('background')}>
-                      <Map className="workflow-icon" size={22} />
-                      <h3>Mover Câmera</h3>
+                      <Map className="workflow-icon" size={22} /><h3>Mover Câmera</h3>
                     </div>
                   </>
                 )}
@@ -466,7 +441,6 @@ export default function App() {
 
               <hr className="divider" />
 
-              {/* Referências */}
               <div className="section-title">
                 <Sparkles size={20} />
                 <h2>Passo 3: Referências ({workflowInfo.title})</h2>
@@ -484,12 +458,7 @@ export default function App() {
                     <>
                       <Upload className="upload-icon" size={32} />
                       <p className="upload-text">Arraste ou <span>clique para subir</span> referência</p>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                        onChange={(e) => handleImageUpload(e, setRefImage)}
-                      />
+                      <input type="file" accept="image/*" style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={(e) => handleImageUpload(e, setRefImage)} />
                     </>
                   )}
                 </div>
@@ -497,12 +466,7 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Instruções Adicionais</label>
-                <textarea 
-                  className="form-input form-textarea" 
-                  placeholder={workflowInfo.descPlaceholder}
-                  value={userInstructions}
-                  onChange={(e) => setUserInstructions(e.target.value)}
-                />
+                <textarea className="form-input form-textarea" placeholder={workflowInfo.descPlaceholder} value={userInstructions} onChange={(e) => setUserInstructions(e.target.value)} />
               </div>
 
               {error && (
@@ -512,20 +476,16 @@ export default function App() {
                 </div>
               )}
 
-              <button 
-                className="btn-generate"
-                disabled={loading || !modelDesc}
-                onClick={handleGenerate}
-              >
+              <button className="btn-generate" disabled={loading || !modelDesc} onClick={handleGenerate}>
                 {loading ? (
                   <>
                     <RefreshCw size={20} className="spin" />
-                    <span>Analisando e gerando prompts...</span>
+                    <span>Analisando e gerando...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles size={20} />
-                    <span>Gerar Prompts Otimizados</span>
+                    <span>Gerar Prompts Otimizados ({providerLabel})</span>
                   </>
                 )}
               </button>
@@ -537,16 +497,10 @@ export default function App() {
           <div className="right-panel">
             <div className="glass outputs-card">
               <div className="right-panel-nav">
-                <button 
-                  className={`panel-tab ${rightTab === 'results' ? 'active' : ''}`}
-                  onClick={() => setRightTab('results')}
-                >
+                <button className={`panel-tab ${rightTab === 'results' ? 'active' : ''}`} onClick={() => setRightTab('results')}>
                   <Sparkles size={16} /> Resultados Atuais
                 </button>
-                <button 
-                  className={`panel-tab ${rightTab === 'history' ? 'active' : ''}`}
-                  onClick={() => setRightTab('history')}
-                >
+                <button className={`panel-tab ${rightTab === 'history' ? 'active' : ''}`} onClick={() => setRightTab('history')}>
                   <History size={16} /> Histórico
                 </button>
               </div>
