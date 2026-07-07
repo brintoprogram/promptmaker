@@ -118,53 +118,21 @@ export async function generatePrompts({
 }) {
   if (!apiKey) throw new Error("A API Key é obrigatória.");
 
-  const systemInstruction = `Você é um Engenheiro de Prompts Especialista Sênior, focado em criar Modelos e Influenciadoras Virtuais de IA ultra realistas para TikTok e Instagram. 
-Seu objetivo é gerar prompts magistrais e extremamente detalhados para diferentes motores de IA, garantindo fotorrealismo extremo, textura de pele natural e iluminação de fotos/vídeos da vida real (UGC, smartphone camera).
-
-### INFORMAÇÕES DA MODELO BASE:
-Nome: ${modelName || 'A modelo'}
-Características Faciais e Corporais (DESCREVA ISSO OBRIGATORIAMENTE NO PROMPT): ${modelDesc}
-
-### TIPO DE MÍDIA SOLICITADA:
-${mediaType === 'image' ? 'Geração de Imagens Estáticas' : 'Geração de Vídeo (Foque em movimento, estabilidade de câmera, ação fluida).'}
-
-### TIPO DE AÇÃO / FLUXO DE TRABALHO:
-Ação solicitada: ${workflow.toUpperCase()} 
-Instruções adicionais do usuário: ${userInstructions || 'Nenhuma.'}
-
-### REGRA CRÍTICA PARA O FORMATO DOS PROMPTS:
-O usuário irá enviar duas imagens em anexo (Imagem 1 = Modelo Base, Imagem 2 = Referência de Ação/Roupa/Pose) para o gerador de imagem final.
-Os seus prompts NUNCA devem dizer "Crie uma mulher genérica". O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas.
-Por exemplo, você deve escrever coisas como: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
-Depois dessa introdução que amarra a imagem 1 e imagem 2, você DEVE continuar descrevendo as características físicas (cabelo, rosto, biotipo) extraídas da modelo base para garantir fidelidade, além de descrever o cenário e a iluminação.
-
-DIRETRIZES DE PROMPTING (ESCREVA OS PROMPTS EM INGLÊS):
-- Flux: Prompt longo e narrativo. Ex: "A high quality photo of the exact woman shown in attached image 1, wearing the outfit from attached image 2. She has ${modelDesc}. The setting is..."
-- Midjourney: "photorealistic portrait of the woman from image 1, wearing the outfit from image 2, ${modelDesc}, [cenario], UGC, shot on iPhone 15 Pro, ultra detailed, 8k, photorealism --ar 9:16 --v 6.0 --style raw"
-- Stable Diffusion (Tags):
-  - positive: "RAW photo, (masterpiece:1.2), best quality, 1girl, the exact woman from attached image 1, wearing outfit from attached image 2, ${modelDesc}, [cenario], realistic skin texture, highly detailed face"
-  - negative: "(worst quality, low quality:1.4), deformed, bad anatomy, bad hands, missing fingers, text, watermarks"
-- Nano Banana: Prompt otimizado para o fluxo do Nano Banana. Ex: "Create an ultra-realistic UGC photo of the woman in image 1 wearing the clothes from image 2. ${modelDesc}. [Iluminação e cenário da vida real]"
-- Video AI (Sora/Runway/Kling): "Ultra realistic video, UGC TikTok style. The camera is static. The woman from attached image 1, who has ${modelDesc}, is [ação/movimento da imagem 2]."
-
-A resposta DEVE SER ESTRITAMENTE UM JSON no seguinte formato (sem crases Markdown \`\`\`json):
-{
-  "flux": "prompt longo para flux em ingles",
-  "midjourney": "prompt para midjourney em ingles",
-  "stable_diffusion": {
-    "positive": "tags positivas em ingles",
-    "negative": "tags negativas em ingles"
-  },
-  "nano_banana": "prompt para nano banana em ingles",
-  "video_prompt": "prompt de video em ingles",
-  "explicacao": "Breve explicacao em PT-BR instruindo o usuario a anexar a Imagem 1 (Modelo) e Imagem 2 (Referencia) na plataforma onde for gerar."
-}`;
+  let finalSystemInstruction = customSystemPrompt || `Você é um Engenheiro de Prompts Especialista Sênior... (Padrão de Fallback)`;
+  
+  // Substituir as variáveis do contexto no prompt customizado do usuário
+  finalSystemInstruction = finalSystemInstruction
+    .replace('{{modelName}}', modelName || 'A modelo')
+    .replace('{{modelDesc}}', modelDesc || '')
+    .replace('{{mediaType}}', mediaType === 'image' ? 'Geração de Imagens Estáticas' : 'Geração de Vídeo')
+    .replace('{{workflow}}', workflow.toUpperCase())
+    .replace('{{userInstructions}}', userInstructions || 'Nenhuma.');
 
   if (aiProvider === 'gemini') {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      const parts = [systemInstruction];
+      const parts = [finalSystemInstruction];
 
       if (modelImage) {
         parts.push("Aqui está a imagem visual da modelo base:");
@@ -190,7 +158,7 @@ A resposta DEVE SER ESTRITAMENTE UM JSON no seguinte formato (sem crases Markdow
   } else if (aiProvider === 'openai') {
       
       const content = [
-          { type: "text", text: systemInstruction }
+          { type: "text", text: finalSystemInstruction }
       ];
 
       if (modelImage) {

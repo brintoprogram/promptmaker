@@ -24,6 +24,32 @@ import {
 } from 'lucide-react';
 import { generatePrompts, extractModelFeatures, testConnection } from './gemini';
 
+const DEFAULT_SYSTEM_PROMPT = `Você é um Engenheiro de Prompts Especialista Sênior, focado em criar Modelos e Influenciadoras Virtuais de IA ultra realistas.
+O usuário irá enviar duas imagens em anexo (Imagem 1 = Modelo Base, Imagem 2 = Referência de Ação/Roupa/Pose).
+
+REGRA CRÍTICA:
+NUNCA descreva excessivamente as características físicas do rosto e do corpo da modelo no prompt final, pois a Imagem 1 já fornece a aparência exata. Apenas cite detalhes mínimos se for estritamente necessário para reforçar.
+Foque a descrição pesadamente na AÇÃO, CENÁRIO, ROUPAS (Imagem 2), ILUMINAÇÃO e TEXTURAS.
+
+O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas. Exemplo: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
+
+DIRETRIZES DE PROMPTING (EM INGLÊS):
+- Flux: Prompt narrativo focando na ação e ambiente.
+- Midjourney: Tags focadas no visual e ambiente.
+- Stable Diffusion: Tags separadas por vírgula.
+- Nano Banana: Prompt UGC realista focado na transição/roupa.
+- Video AI: Descrição de movimento de câmera e ação.
+
+A resposta DEVE SER UM JSON ESTRITO no seguinte formato:
+{
+  "flux": "...",
+  "midjourney": "...",
+  "stable_diffusion": { "positive": "...", "negative": "..." },
+  "nano_banana": "...",
+  "video_prompt": "...",
+  "explicacao": "..."
+}`;
+
 export default function App() {
   // Navigation State
   const [currentTab, setCurrentTab] = useState('studio'); // 'studio' | 'settings'
@@ -35,6 +61,7 @@ export default function App() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [testStatus, setTestStatus] = useState({ gemini: null, openai: null });
   const [testError, setTestError] = useState({ gemini: null, openai: null });
+  const [customSystemPrompt, setCustomSystemPrompt] = useState(() => localStorage.getItem('custom_system_prompt') || DEFAULT_SYSTEM_PROMPT);
   
   // Base Model
   const [modelName, setModelName] = useState(() => localStorage.getItem('model_name') || 'Sophia');
@@ -78,6 +105,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gemini_api_key', geminiApiKey); }, [geminiApiKey]);
   useEffect(() => { localStorage.setItem('openai_api_key', openAiApiKey); }, [openAiApiKey]);
   useEffect(() => { localStorage.setItem('ai_provider', aiProvider); }, [aiProvider]);
+  useEffect(() => { localStorage.setItem('custom_system_prompt', customSystemPrompt); }, [customSystemPrompt]);
   useEffect(() => { localStorage.setItem('prompt_studio_history', JSON.stringify(history)); }, [history]);
 
   useEffect(() => {
@@ -164,7 +192,8 @@ export default function App() {
         workflow,
         refImage,
         userInstructions,
-        mediaType
+        mediaType,
+        customSystemPrompt
       });
 
       setResults(output);
@@ -344,6 +373,23 @@ export default function App() {
               </div>
               {testStatus.openai === 'success' && <p style={{color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem'}}>Conexão bem-sucedida!</p>}
               {testError.openai && <p style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem'}}>{testError.openai}</p>}
+            </div>
+
+            <div className="form-group" style={{marginTop: '2rem'}}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label">Calibragem da Inteligência Artificial (System Prompt)</label>
+                <button className="btn-extract" onClick={() => setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT)}>Restaurar Padrão</button>
+              </div>
+              <p style={{fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem', lineHeight: '1.4'}}>
+                Modifique as instruções abaixo para alterar como a IA pensa e reage às suas imagens. 
+                Isso dita as regras globais de formatação e o peso que a IA dá para as aparências.
+              </p>
+              <textarea 
+                className="form-input form-textarea" 
+                style={{ minHeight: '200px', fontSize: '0.85rem', fontFamily: 'monospace' }}
+                value={customSystemPrompt} 
+                onChange={(e) => setCustomSystemPrompt(e.target.value)} 
+              />
             </div>
 
           </div>
