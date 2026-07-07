@@ -114,7 +114,9 @@ export async function generatePrompts({
   workflow,
   refImage, 
   userInstructions,
-  mediaType = 'image'
+  mediaType = 'image',
+  targetPlatform = 'flux',
+  customSystemPrompt
 }) {
   if (!apiKey) throw new Error("A API Key é obrigatória.");
 
@@ -126,7 +128,8 @@ export async function generatePrompts({
     .replace('{{modelDesc}}', modelDesc || '')
     .replace('{{mediaType}}', mediaType === 'image' ? 'Geração de Imagens Estáticas' : 'Geração de Vídeo')
     .replace('{{workflow}}', workflow.toUpperCase())
-    .replace('{{userInstructions}}', userInstructions || 'Nenhuma.');
+    .replace('{{userInstructions}}', userInstructions || 'Nenhuma.')
+    .replace('{{targetPlatform}}', targetPlatform.toUpperCase());
 
   if (aiProvider === 'gemini') {
       const genAI = new GoogleGenerativeAI(apiKey);
