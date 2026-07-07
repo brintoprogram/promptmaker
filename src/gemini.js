@@ -133,22 +133,20 @@ Ação solicitada: ${workflow.toUpperCase()}
 Instruções adicionais do usuário: ${userInstructions || 'Nenhuma.'}
 
 ### REGRA CRÍTICA PARA O FORMATO DOS PROMPTS:
-Como o usuário vai usar esses prompts em ferramentas externas, você DEVE INCLUIR NO INÍCIO DE TODOS OS PROMPTS OS PLACEHOLDERS DE IMAGEM para guiar o usuário.
-O usuário enviará a imagem da MODELO BASE (Imagem 1) e, dependendo da ação, uma imagem de REFERÊNCIA (Imagem 2 - para pose/roupa/cenário). 
-TODO prompt gerado DEVE começar EXATAMENTE com este prefixo:
-"[ATTACH BASE MODEL IMAGE HERE] [ATTACH REFERENCE IMAGE HERE] "
-
-E em seguida, o prompt deve mesclar as características físicas da modelo base com os detalhes da ação/roupa/cenário, criando uma cena super descritiva e coesa.
+O usuário irá enviar duas imagens em anexo (Imagem 1 = Modelo Base, Imagem 2 = Referência de Ação/Roupa/Pose) para o gerador de imagem final.
+Os seus prompts NUNCA devem dizer "Crie uma mulher genérica". O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas.
+Por exemplo, você deve escrever coisas como: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
+Depois dessa introdução que amarra a imagem 1 e imagem 2, você DEVE continuar descrevendo as características físicas (cabelo, rosto, biotipo) extraídas da modelo base para garantir fidelidade, além de descrever o cenário e a iluminação.
 
 DIRETRIZES DE PROMPTING (ESCREVA OS PROMPTS EM INGLÊS):
-- Flux: Prompt longo, em linguagem natural. Descreva o ambiente, a iluminação (ex: natural sunlight, ring light), a roupa em detalhes, a expressão facial e as características do corpo da modelo.
-- Midjourney: "[ATTACH BASE MODEL IMAGE HERE] [ATTACH REFERENCE IMAGE HERE] photorealistic photo of a woman, ${modelDesc}, wearing [roupa], [pose], [cenario], UGC, shot on iPhone 15 Pro, ultra detailed, 8k, photorealism --ar 9:16 --v 6.0 --style raw"
+- Flux: Prompt longo e narrativo. Ex: "A high quality photo of the exact woman shown in attached image 1, wearing the outfit from attached image 2. She has ${modelDesc}. The setting is..."
+- Midjourney: "photorealistic portrait of the woman from image 1, wearing the outfit from image 2, ${modelDesc}, [cenario], UGC, shot on iPhone 15 Pro, ultra detailed, 8k, photorealism --ar 9:16 --v 6.0 --style raw"
 - Stable Diffusion (Tags):
-  - positive: "[ATTACH BASE MODEL IMAGE HERE] [ATTACH REFERENCE IMAGE HERE] RAW photo, (masterpiece:1.2), best quality, 1girl, ${modelDesc}, [roupa/pose/cenario], realistic skin texture, highly detailed face"
+  - positive: "RAW photo, (masterpiece:1.2), best quality, 1girl, the exact woman from attached image 1, wearing outfit from attached image 2, ${modelDesc}, [cenario], realistic skin texture, highly detailed face"
   - negative: "(worst quality, low quality:1.4), deformed, bad anatomy, bad hands, missing fingers, text, watermarks"
-- Video AI (Sora/Runway/Kling): "[ATTACH BASE MODEL IMAGE HERE] [ATTACH REFERENCE IMAGE HERE] Ultra realistic video, UGC TikTok style. The camera is static. A woman, ${modelDesc}, is [ação/movimento]."
+- Nano Banana: Prompt otimizado para o fluxo do Nano Banana. Ex: "Create an ultra-realistic UGC photo of the woman in image 1 wearing the clothes from image 2. ${modelDesc}. [Iluminação e cenário da vida real]"
+- Video AI (Sora/Runway/Kling): "Ultra realistic video, UGC TikTok style. The camera is static. The woman from attached image 1, who has ${modelDesc}, is [ação/movimento da imagem 2]."
 
-Nunca gere prompts curtos. Seja extremamente minucioso e adicione detalhes de textura e iluminação da vida real.
 A resposta DEVE SER ESTRITAMENTE UM JSON no seguinte formato (sem crases Markdown \`\`\`json):
 {
   "flux": "prompt longo para flux em ingles",
@@ -157,8 +155,9 @@ A resposta DEVE SER ESTRITAMENTE UM JSON no seguinte formato (sem crases Markdow
     "positive": "tags positivas em ingles",
     "negative": "tags negativas em ingles"
   },
+  "nano_banana": "prompt para nano banana em ingles",
   "video_prompt": "prompt de video em ingles",
-  "explicacao": "Breve explicacao em PT-BR instruindo o usuario a não esquecer de anexar as imagens reais onde estão os placeholders antes de gerar."
+  "explicacao": "Breve explicacao em PT-BR instruindo o usuario a anexar a Imagem 1 (Modelo) e Imagem 2 (Referencia) na plataforma onde for gerar."
 }`;
 
   if (aiProvider === 'gemini') {

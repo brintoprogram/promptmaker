@@ -522,6 +522,7 @@ export default function App() {
                               <button className={`tab-btn ${activeResultTab === 'flux' ? 'active' : ''}`} onClick={() => setActiveResultTab('flux')}>FLUX</button>
                               <button className={`tab-btn ${activeResultTab === 'midjourney' ? 'active' : ''}`} onClick={() => setActiveResultTab('midjourney')}>Midjourney</button>
                               <button className={`tab-btn ${activeResultTab === 'stable_diffusion' ? 'active' : ''}`} onClick={() => setActiveResultTab('stable_diffusion')}>Stable Diffusion</button>
+                              <button className={`tab-btn ${activeResultTab === 'nano_banana' ? 'active' : ''}`} onClick={() => setActiveResultTab('nano_banana')}>Nano Banana</button>
                             </>
                           ) : (
                              <button className={`tab-btn ${activeResultTab === 'video' ? 'active' : ''}`} onClick={() => setActiveResultTab('video')}>Prompt de Vídeo AI</button>
@@ -562,6 +563,15 @@ export default function App() {
                                 {copiedField === 'sd_neg' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'sd_neg' ? 'Copiado!' : 'Copiar'}</span>
                               </button>
                             </div>
+                          </div>
+                        )}
+                        
+                        {activeResultTab === 'nano_banana' && results.nano_banana && (
+                          <div className="prompt-box-container">
+                            <div className="prompt-text">{results.nano_banana}</div>
+                            <button className={`copy-badge ${copiedField === 'nano_banana' ? 'copied' : ''}`} onClick={() => handleCopy(results.nano_banana, 'nano_banana')}>
+                              {copiedField === 'nano_banana' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'nano_banana' ? 'Copiado!' : 'Copiar'}</span>
+                            </button>
                           </div>
                         )}
                         
