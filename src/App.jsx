@@ -33,21 +33,13 @@ Foque a descrição pesadamente na AÇÃO, CENÁRIO, ROUPAS (Imagem 2), ILUMINA�
 
 O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas. Exemplo: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
 
-DIRETRIZES DE PROMPTING (EM INGLÊS):
-- Flux: Prompt narrativo focando na ação e ambiente.
-- Midjourney: Tags focadas no visual e ambiente.
-- Stable Diffusion: Tags separadas por vírgula.
-- Nano Banana: Prompt UGC realista focado na transição/roupa.
-- Video AI: Descrição de movimento de câmera e ação.
+PLATAFORMA ALVO: {{targetPlatform}}
+Baseie a estrutura do seu prompt EXCLUSIVAMENTE nas melhores práticas da plataforma alvo acima. (Ex: Midjourney usa vírgulas e parâmetros, Flux usa linguagem natural narrativa, Stable Diffusion usa tags rigorosas, Nano Banana usa foco em transição).
 
 A resposta DEVE SER UM JSON ESTRITO no seguinte formato:
 {
-  "flux": "...",
-  "midjourney": "...",
-  "stable_diffusion": { "positive": "...", "negative": "..." },
-  "nano_banana": "...",
-  "video_prompt": "...",
-  "explicacao": "..."
+  "prompt": "Seu prompt ultra detalhado otimizado para a plataforma alvo em ingles",
+  "explicacao": "Breve explicacao/dica de uso em PT-BR"
 }`;
 
 export default function App() {
@@ -71,6 +63,7 @@ export default function App() {
   // Workflow and Options
   const [mediaType, setMediaType] = useState('image');
   const [workflow, setWorkflow] = useState('pose'); 
+  const [targetPlatform, setTargetPlatform] = useState('nano_banana'); // 'flux' | 'midjourney' | 'stable_diffusion' | 'nano_banana'
   const [refImage, setRefImage] = useState(null);
   const [userInstructions, setUserInstructions] = useState('');
 
@@ -82,7 +75,6 @@ export default function App() {
   
   // Right Panel Tabs
   const [rightTab, setRightTab] = useState('results');
-  const [activeResultTab, setActiveResultTab] = useState('flux');
   const [copiedField, setCopiedField] = useState(null);
 
   // History
@@ -193,11 +185,11 @@ export default function App() {
         refImage,
         userInstructions,
         mediaType,
+        targetPlatform,
         customSystemPrompt
       });
 
       setResults(output);
-      setActiveResultTab(mediaType === 'video' ? 'video' : 'flux');
 
       const historyItem = {
         id: Date.now().toString(),
@@ -207,6 +199,7 @@ export default function App() {
         modelDesc,
         workflow,
         mediaType,
+        targetPlatform,
         userInstructions,
         results: output
       };
@@ -231,11 +224,11 @@ export default function App() {
     setModelDesc(item.modelDesc);
     setWorkflow(item.workflow);
     setMediaType(item.mediaType || 'image');
+    setTargetPlatform(item.targetPlatform || 'nano_banana');
     setUserInstructions(item.userInstructions || '');
     setResults(item.results);
     setRightTab('results');
     setError(null);
-    setActiveResultTab(item.mediaType === 'video' ? 'video' : 'flux');
   };
 
   const clearHistory = () => {
@@ -485,6 +478,20 @@ export default function App() {
                 )}
               </div>
 
+              {mediaType === 'image' && (
+                <>
+                  <div className="form-group" style={{marginTop: '1.5rem'}}>
+                    <label className="form-label">Qual IA você vai usar para gerar a imagem?</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button className={`tab-btn ${targetPlatform === 'nano_banana' ? 'active' : ''}`} onClick={() => setTargetPlatform('nano_banana')}>Nano Banana</button>
+                      <button className={`tab-btn ${targetPlatform === 'flux' ? 'active' : ''}`} onClick={() => setTargetPlatform('flux')}>Flux</button>
+                      <button className={`tab-btn ${targetPlatform === 'midjourney' ? 'active' : ''}`} onClick={() => setTargetPlatform('midjourney')}>Midjourney</button>
+                      <button className={`tab-btn ${targetPlatform === 'stable_diffusion' ? 'active' : ''}`} onClick={() => setTargetPlatform('stable_diffusion')}>Stable Diffusion</button>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <hr className="divider" />
 
               <div className="section-title">
@@ -562,73 +569,14 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="results-container fade-in">
-                        <div className="tabs-header">
-                          {mediaType === 'image' ? (
-                            <>
-                              <button className={`tab-btn ${activeResultTab === 'flux' ? 'active' : ''}`} onClick={() => setActiveResultTab('flux')}>FLUX</button>
-                              <button className={`tab-btn ${activeResultTab === 'midjourney' ? 'active' : ''}`} onClick={() => setActiveResultTab('midjourney')}>Midjourney</button>
-                              <button className={`tab-btn ${activeResultTab === 'stable_diffusion' ? 'active' : ''}`} onClick={() => setActiveResultTab('stable_diffusion')}>Stable Diffusion</button>
-                              <button className={`tab-btn ${activeResultTab === 'nano_banana' ? 'active' : ''}`} onClick={() => setActiveResultTab('nano_banana')}>Nano Banana</button>
-                            </>
-                          ) : (
-                             <button className={`tab-btn ${activeResultTab === 'video' ? 'active' : ''}`} onClick={() => setActiveResultTab('video')}>Prompt de Vídeo AI</button>
-                          )}
+                        <div className="prompt-box-container">
+                          <div className="prompt-text">
+                            {results.prompt}
+                          </div>
+                          <button className={`copy-badge ${copiedField === 'prompt' ? 'copied' : ''}`} onClick={() => handleCopy(results.prompt, 'prompt')}>
+                            {copiedField === 'prompt' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'prompt' ? 'Copiado!' : 'Copiar'}</span>
+                          </button>
                         </div>
-
-                        {activeResultTab === 'flux' && results.flux && (
-                          <div className="prompt-box-container">
-                            <div className="prompt-text">{results.flux}</div>
-                            <button className={`copy-badge ${copiedField === 'flux' ? 'copied' : ''}`} onClick={() => handleCopy(results.flux, 'flux')}>
-                              {copiedField === 'flux' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'flux' ? 'Copiado!' : 'Copiar'}</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {activeResultTab === 'midjourney' && results.midjourney && (
-                          <div className="prompt-box-container">
-                            <div className="prompt-text">{results.midjourney}</div>
-                            <button className={`copy-badge ${copiedField === 'midjourney' ? 'copied' : ''}`} onClick={() => handleCopy(results.midjourney, 'midjourney')}>
-                              {copiedField === 'midjourney' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'midjourney' ? 'Copiado!' : 'Copiar'}</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {activeResultTab === 'stable_diffusion' && results.stable_diffusion && (
-                          <div>
-                            <label className="form-label" style={{marginTop: '1rem'}}>Prompt Positivo (Tags)</label>
-                            <div className="prompt-box-container" style={{ minHeight: '80px', marginBottom: '1rem' }}>
-                              <div className="prompt-text">{results.stable_diffusion.positive}</div>
-                              <button className={`copy-badge ${copiedField === 'sd_pos' ? 'copied' : ''}`} onClick={() => handleCopy(results.stable_diffusion.positive, 'sd_pos')}>
-                                {copiedField === 'sd_pos' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'sd_pos' ? 'Copiado!' : 'Copiar'}</span>
-                              </button>
-                            </div>
-                            <label className="form-label">Prompt Negativo Padrão</label>
-                            <div className="prompt-box-container" style={{ minHeight: '60px' }}>
-                              <div className="prompt-text">{results.stable_diffusion.negative}</div>
-                              <button className={`copy-badge ${copiedField === 'sd_neg' ? 'copied' : ''}`} onClick={() => handleCopy(results.stable_diffusion.negative, 'sd_neg')}>
-                                {copiedField === 'sd_neg' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'sd_neg' ? 'Copiado!' : 'Copiar'}</span>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {activeResultTab === 'nano_banana' && results.nano_banana && (
-                          <div className="prompt-box-container">
-                            <div className="prompt-text">{results.nano_banana}</div>
-                            <button className={`copy-badge ${copiedField === 'nano_banana' ? 'copied' : ''}`} onClick={() => handleCopy(results.nano_banana, 'nano_banana')}>
-                              {copiedField === 'nano_banana' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'nano_banana' ? 'Copiado!' : 'Copiar'}</span>
-                            </button>
-                          </div>
-                        )}
-                        
-                        {activeResultTab === 'video' && results.video_prompt && (
-                           <div className="prompt-box-container">
-                             <div className="prompt-text">{results.video_prompt}</div>
-                             <button className={`copy-badge ${copiedField === 'video' ? 'copied' : ''}`} onClick={() => handleCopy(results.video_prompt, 'video')}>
-                               {copiedField === 'video' ? <Check size={14} /> : <Copy size={14} />} <span>{copiedField === 'video' ? 'Copiado!' : 'Copiar'}</span>
-                             </button>
-                           </div>
-                        )}
 
                         {results.explicacao && (
                           <div className="explanation-section">
