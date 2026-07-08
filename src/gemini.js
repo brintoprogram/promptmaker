@@ -32,7 +32,7 @@ export async function testConnection({ apiKey, aiProvider }) {
   } else if (aiProvider === 'openai' || aiProvider === 'grok') {
     try {
       const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
-      const modelName = aiProvider === 'grok' ? "grok-2-1212" : "gpt-4o-mini";
+      const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o-mini";
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -48,7 +48,8 @@ export async function testConnection({ apiKey, aiProvider }) {
       });
       const data = await response.json();
       if (data.error) {
-        throw new Error(data.error.message);
+        const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
+        throw new Error(errorMsg || "Erro desconhecido na API.");
       }
       return true;
     } catch (e) {
@@ -108,7 +109,10 @@ Responda APENAS com a descrição contínua. Não use tópicos ou listas, escrev
         });
         
         const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
+        if (data.error) {
+            const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
+            throw new Error(errorMsg || "Erro desconhecido na API.");
+        }
         return data.choices[0].message.content.trim();
     }
 }
@@ -220,7 +224,10 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
       });
       
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+          const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
+          throw new Error(errorMsg || "Erro desconhecido na API.");
+      }
       
       const choice = data.choices[0];
       const messageContent = choice?.message?.content;
