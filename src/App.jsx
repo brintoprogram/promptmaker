@@ -69,6 +69,10 @@ export default function App() {
   const [refImage, setRefImage] = useState(null);
   const [backgroundSource, setBackgroundSource] = useState('image2'); // 'image1' | 'image2' | 'none'
   const [userInstructions, setUserInstructions] = useState('');
+  
+  // Strict constraints
+  const [posePreservation, setPosePreservation] = useState('flexible'); // 'flexible' | 'strict'
+  const [clothingPreservation, setClothingPreservation] = useState('none'); // 'none' | 'keep_top' | 'keep_bottom'
 
   // Execution States
   const [loading, setLoading] = useState(false);
@@ -198,6 +202,8 @@ export default function App() {
         mediaType,
         targetPlatform,
         backgroundSource,
+        posePreservation,
+        clothingPreservation,
         customSystemPrompt
       });
 
@@ -213,6 +219,8 @@ export default function App() {
         mediaType,
         targetPlatform,
         backgroundSource,
+        posePreservation,
+        clothingPreservation,
         userInstructions,
         results: output
       };
@@ -239,6 +247,8 @@ export default function App() {
     setMediaType(item.mediaType || 'image');
     setTargetPlatform(item.targetPlatform || 'nano_banana');
     setBackgroundSource(item.backgroundSource || 'image2');
+    setPosePreservation(item.posePreservation || 'flexible');
+    setClothingPreservation(item.clothingPreservation || 'none');
     setUserInstructions(item.userInstructions || '');
     setResults(item.results);
     setRightTab('results');
@@ -571,6 +581,26 @@ export default function App() {
                   <button className={`tab-btn ${backgroundSource === 'none' ? 'active' : ''}`} onClick={() => setBackgroundSource('none')}>Ignorar os cenários / Vou descrever</button>
                 </div>
               </div>
+
+              <div className="form-group" style={{marginTop: '1.5rem'}}>
+                <label className="form-label">Controle de Pose e Câmera</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button className={`tab-btn ${posePreservation === 'flexible' ? 'active' : ''}`} onClick={() => setPosePreservation('flexible')}>Livre / Adaptável</button>
+                  <button className={`tab-btn ${posePreservation === 'strict' ? 'active' : ''}`} onClick={() => setPosePreservation('strict')}>Manter Pose e Ângulo Exato da Modelo (Img 1)</button>
+                </div>
+              </div>
+
+              {workflow === 'clothing' && (
+                <div className="form-group" style={{marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.3)'}}>
+                  <label className="form-label" style={{color: '#60a5fa'}}>Restrições de Roupa (Troca Parcial)</label>
+                  <p style={{fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.8rem'}}>O que você quer que a IA mantenha da foto original da modelo?</p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button className={`tab-btn ${clothingPreservation === 'none' ? 'active' : ''}`} onClick={() => setClothingPreservation('none')}>Trocar tudo pela Referência</button>
+                    <button className={`tab-btn ${clothingPreservation === 'keep_bottom' ? 'active' : ''}`} onClick={() => setClothingPreservation('keep_bottom')}>Manter Parte de Baixo (Trocar só blusa)</button>
+                    <button className={`tab-btn ${clothingPreservation === 'keep_top' ? 'active' : ''}`} onClick={() => setClothingPreservation('keep_top')}>Manter Parte de Cima (Trocar só calça/short)</button>
+                  </div>
+                </div>
+              )}
 
               <div className="form-group" style={{marginTop: '1.5rem'}}>
                 <label className="form-label">Instruções Adicionais</label>
