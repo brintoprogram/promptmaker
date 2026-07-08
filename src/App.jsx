@@ -412,7 +412,7 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Foto Base da Sua Modelo</label>
-                <div className="upload-box">
+                <div className={`upload-box ${modelImage ? 'has-image' : ''}`}>
                   {modelImage ? (
                     <div className="preview-container">
                       <img src={modelImage} alt="Modelo base" className="preview-img" />
@@ -506,7 +506,7 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">{workflowInfo.imageLabel}</label>
-                <div className="upload-box">
+                <div className={`upload-box ${refImage ? 'has-image' : ''}`}>
                   {refImage ? (
                     <div className="preview-container">
                       <img src={refImage} alt="Referência" className="preview-img" />
