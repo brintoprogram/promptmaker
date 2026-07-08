@@ -208,7 +208,16 @@ export async function generatePrompts({
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
       
-      const responseText = data.choices[0].message.content.trim();
+      const messageContent = data.choices[0]?.message?.content;
+      
+      if (!messageContent) {
+          if (data.choices[0]?.finish_reason === 'content_filter') {
+              throw new Error("A geração foi bloqueada pelos filtros de segurança (NSFW) da OpenAI.");
+          }
+          throw new Error("A API retornou uma resposta vazia ou bloqueada.");
+      }
+      
+      const responseText = messageContent.trim();
       try {
         return JSON.parse(responseText);
       } catch (e) {
