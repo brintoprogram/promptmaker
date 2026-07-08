@@ -147,9 +147,9 @@ export async function generatePrompts({
   
   let backgroundInstruction = '';
   if (backgroundSource === 'image1') {
-    backgroundInstruction = 'IMPORTANT: You MUST include the exact phrase "Keep the exact same background of image 1" in your final generated prompt. Focus on describing the action and clothes, but do not hallucinate a different background.';
+    backgroundInstruction = 'IMPORTANT: You MUST include the EXACT phrase "Keep the exact same background of image 1" in your final generated prompt. DO NOT describe the background at all (no furniture, no room, no lighting description). Just use the phrase above.';
   } else if (backgroundSource === 'image2') {
-    backgroundInstruction = 'IMPORTANT: You MUST include the exact phrase "Keep the exact same background of image 2" in your final generated prompt. Focus on describing the action and clothes, but do not hallucinate a different background.';
+    backgroundInstruction = 'IMPORTANT: You MUST include the EXACT phrase "Keep the exact same background of image 2" in your final generated prompt. DO NOT describe the background at all (no furniture, no room, no lighting description). Just use the phrase above.';
   } else {
     backgroundInstruction = 'The user does not want to keep the base backgrounds. Create a cohesive new background that matches the action and user instructions.';
   }
