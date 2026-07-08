@@ -75,6 +75,7 @@ export default function App() {
   // Strict constraints
   const [posePreservation, setPosePreservation] = useState('flexible'); // 'flexible' | 'strict'
   const [clothingPreservation, setClothingPreservation] = useState('none'); // 'none' | 'keep_top' | 'keep_bottom'
+  const [aestheticStyle, setAestheticStyle] = useState('none'); // 'none' | 'selfie' | 'flash' | 'tiktok'
 
   // Execution States
   const [loading, setLoading] = useState(false);
@@ -206,6 +207,7 @@ export default function App() {
         backgroundSource,
         posePreservation,
         clothingPreservation,
+        aestheticStyle,
         customSystemPrompt
       });
 
@@ -223,6 +225,7 @@ export default function App() {
         backgroundSource,
         posePreservation,
         clothingPreservation,
+        aestheticStyle,
         userInstructions,
         results: output
       };
@@ -251,6 +254,7 @@ export default function App() {
     setBackgroundSource(item.backgroundSource || 'image2');
     setPosePreservation(item.posePreservation || 'flexible');
     setClothingPreservation(item.clothingPreservation || 'none');
+    setAestheticStyle(item.aestheticStyle || 'none');
     setUserInstructions(item.userInstructions || '');
     setResults(item.results);
     setRightTab('results');
@@ -603,6 +607,16 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              <div className="form-group" style={{marginTop: '1.5rem'}}>
+                <label className="form-label">Estilo Fotográfico (Realismo Orgânico)</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button className={`tab-btn ${aestheticStyle === 'none' ? 'active' : ''}`} onClick={() => setAestheticStyle('none')}>Livre (Padrão)</button>
+                  <button className={`tab-btn ${aestheticStyle === 'selfie' ? 'active' : ''}`} onClick={() => setAestheticStyle('selfie')}>Selfie de Celular (Casual)</button>
+                  <button className={`tab-btn ${aestheticStyle === 'flash' ? 'active' : ''}`} onClick={() => setAestheticStyle('flash')}>Flash Estourado (Festa/Noturno)</button>
+                  <button className={`tab-btn ${aestheticStyle === 'tiktok' ? 'active' : ''}`} onClick={() => setAestheticStyle('tiktok')}>Estilo TikTok / Reels</button>
+                </div>
+              </div>
 
               <div className="form-group" style={{marginTop: '1.5rem'}}>
                 <label className="form-label">Instruções Adicionais</label>

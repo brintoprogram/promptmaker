@@ -139,6 +139,7 @@ export async function generatePrompts({
   backgroundSource = 'image2',
   posePreservation = 'flexible',
   clothingPreservation = 'none',
+  aestheticStyle = 'none',
   customSystemPrompt
 }) {
   if (!apiKey) throw new Error("A API Key é obrigatória.");
@@ -186,6 +187,15 @@ export async function generatePrompts({
     strictConstraints += '\nIMPORTANT POSE RULE: You MUST explicitly include the exact phrase "Keep the exact same pose and camera angle of image 1" in the generated prompt.';
   } else if (workflow === 'pose') {
     strictConstraints += '\nIMPORTANT POSE RULE: You MUST explicitly include the exact phrase "Keep the exact same pose and camera angle of image 2" in the generated prompt. Focus on describing the model\'s clothes and the pose from image 2.';
+  }
+
+  // AESTHETIC & UGC STYLES
+  if (aestheticStyle === 'selfie') {
+    strictConstraints += '\nAESTHETIC RULE: You MUST format the prompt to generate an amateur smartphone selfie. Include keywords like: "candid smartphone selfie, front-facing camera, arm visible, eye level, slightly grainy, unpolished, raw, IMG_4522.JPG". You MUST explicitly add negative constraints: "NO professional photography, NO studio lighting, NO 4k, NO masterpiece".';
+  } else if (aestheticStyle === 'flash') {
+    strictConstraints += '\nAESTHETIC RULE: You MUST format the prompt to generate a raw night/party photo. Include keywords like: "harsh direct flash, overexposed, red eye, amateur party photo, disposable camera aesthetic, snapshot". You MUST explicitly add negative constraints: "NO professional photography, NO soft lighting, NO studio lighting".';
+  } else if (aestheticStyle === 'tiktok') {
+    strictConstraints += '\nAESTHETIC RULE: You MUST format the prompt to generate a TikTok/Reels style video screenshot. Include keywords like: "vertical video frame, ring light reflection in eyes, mid-motion, casual vlogger aesthetic, slightly tilted, authentic UGC". You MUST explicitly add negative constraints: "NO professional cinematography, NO cinematic lighting, NO 8k".';
   }
 
   finalSystemInstruction = `[CONTEXTO PROFISSIONAL DE FOTOGRAFIA, MODA E DESIGN DE AVATARES - SAFE FOR WORK]
