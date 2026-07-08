@@ -176,6 +176,8 @@ export async function generatePrompts({
 
   if (posePreservation === 'strict') {
     strictConstraints += '\nIMPORTANT POSE RULE: You MUST explicitly include the exact phrase "Keep the exact same pose and camera angle of image 1" in the generated prompt.';
+  } else if (workflow === 'pose') {
+    strictConstraints += '\nIMPORTANT POSE RULE: You MUST explicitly include the exact phrase "Keep the exact same pose and camera angle of image 2" in the generated prompt. Focus on describing the model\'s clothes and the pose from image 2.';
   }
 
   finalSystemInstruction = `[CONTEXTO PROFISSIONAL DE FOTOGRAFIA, MODA E DESIGN DE AVATARES - SAFE FOR WORK]
