@@ -29,16 +29,19 @@ export async function testConnection({ apiKey, aiProvider }) {
     } catch (e) {
       throw new Error("Falha na conexão com Gemini: " + e.message);
     }
-  } else if (aiProvider === 'openai') {
+  } else if (aiProvider === 'openai' || aiProvider === 'grok') {
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
+      const modelName = aiProvider === 'grok' ? "grok-2-1212" : "gpt-4o-mini";
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: modelName,
           messages: [{ role: "user", content: "Say OK" }],
           max_tokens: 5
         })
@@ -49,7 +52,7 @@ export async function testConnection({ apiKey, aiProvider }) {
       }
       return true;
     } catch (e) {
-      throw new Error("Falha na conexão com OpenAI: " + e.message);
+      throw new Error(`Falha na conexão com ${aiProvider.toUpperCase()}: ` + e.message);
     }
   }
   return false;
@@ -79,15 +82,18 @@ Responda APENAS com a descrição contínua. Não use tópicos ou listas, escrev
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
         return response.text().trim();
-    } else if (aiProvider === 'openai') {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    } else if (aiProvider === 'openai' || aiProvider === 'grok') {
+        const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
+        const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o";
+
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4o",
+                model: modelName,
                 messages: [
                     {
                         role: "user",
@@ -177,7 +183,9 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
         throw new Error("O Gemini não retornou um JSON válido. Resposta: " + responseText);
       }
       
-  } else if (aiProvider === 'openai') {
+  } else if (aiProvider === 'openai' || aiProvider === 'grok') {
+      const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
+      const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o";
       
       const content = [
           { type: "text", text: finalSystemInstruction }
@@ -192,14 +200,14 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
           content.push({ type: "image_url", image_url: { url: refImage } });
       }
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: "gpt-4o",
+            model: modelName,
             response_format: { type: "json_object" },
             messages: [
                 {
@@ -219,21 +227,27 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
       const refusal = choice?.message?.refusal;
       
       if (refusal) {
-         throw new Error("A OpenAI recusou a imagem por motivos de segurança: " + refusal);
+         throw new Error(`A API (${aiProvider}) recusou a imagem por motivos de segurança: ` + refusal);
       }
       
       if (!messageContent) {
           if (choice?.finish_reason === 'content_filter') {
-              throw new Error("A geração foi bloqueada pelos filtros de segurança (NSFW) da OpenAI.");
+              throw new Error(`A geração foi bloqueada pelos filtros de segurança (NSFW) da API (${aiProvider}).`);
           }
           throw new Error("A API retornou uma resposta vazia ou bloqueada. Detalhe: " + JSON.stringify(choice));
       }
       
-      const responseText = messageContent.trim();
+      let responseText = messageContent.trim();
+      
+      // GROK WORKAROUND: Sometimes Grok ignores response_format json_object and returns markdown ```json ... ```
+      if (aiProvider === 'grok' && responseText.startsWith('```json')) {
+          responseText = responseText.replace(/^```json/, '').replace(/```$/, '').trim();
+      }
+
       try {
         return JSON.parse(responseText);
       } catch (e) {
-        throw new Error("A OpenAI não retornou um JSON válido. Tente gerar de novo. Resposta da IA: " + responseText);
+        throw new Error(`A API (${aiProvider}) não retornou um JSON válido. Tente gerar de novo. Resposta da IA: ` + responseText);
       }
   }
 }

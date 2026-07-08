@@ -50,10 +50,11 @@ export default function App() {
   // Settings & API Keys
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [openAiApiKey, setOpenAiApiKey] = useState(() => localStorage.getItem('openai_api_key') || '');
-  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('ai_provider') || 'gemini'); // 'gemini' | 'openai'
+  const [grokApiKey, setGrokApiKey] = useState(() => localStorage.getItem('grok_api_key') || '');
+  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('ai_provider') || 'grok'); // 'gemini' | 'openai' | 'grok'
   const [showApiKey, setShowApiKey] = useState(false);
-  const [testStatus, setTestStatus] = useState({ gemini: null, openai: null });
-  const [testError, setTestError] = useState({ gemini: null, openai: null });
+  const [testStatus, setTestStatus] = useState({ gemini: null, openai: null, grok: null });
+  const [testError, setTestError] = useState({ gemini: null, openai: null, grok: null });
   const [customSystemPrompt, setCustomSystemPrompt] = useState(() => localStorage.getItem('custom_system_prompt') || DEFAULT_SYSTEM_PROMPT);
   
   // Base Model
@@ -105,6 +106,7 @@ export default function App() {
   }, [modelImage]);
   useEffect(() => { localStorage.setItem('gemini_api_key', geminiApiKey); }, [geminiApiKey]);
   useEffect(() => { localStorage.setItem('openai_api_key', openAiApiKey); }, [openAiApiKey]);
+  useEffect(() => { localStorage.setItem('grok_api_key', grokApiKey); }, [grokApiKey]);
   useEffect(() => { localStorage.setItem('ai_provider', aiProvider); }, [aiProvider]);
   useEffect(() => { localStorage.setItem('custom_system_prompt', customSystemPrompt); }, [customSystemPrompt]);
   useEffect(() => { localStorage.setItem('prompt_studio_history', JSON.stringify(history)); }, [history]);
@@ -126,7 +128,7 @@ export default function App() {
   };
 
   const handleTestConnection = async (provider) => {
-    const key = provider === 'gemini' ? geminiApiKey : openAiApiKey;
+    const key = provider === 'gemini' ? geminiApiKey : (provider === 'grok' ? grokApiKey : openAiApiKey);
     if (!key) {
       setTestError({ ...testError, [provider]: "Insira a chave primeiro." });
       return;
@@ -149,7 +151,7 @@ export default function App() {
       setError("Por favor, faça upload da foto da modelo primeiro.");
       return;
     }
-    const activeKey = aiProvider === 'gemini' ? geminiApiKey : openAiApiKey;
+    const activeKey = aiProvider === 'gemini' ? geminiApiKey : (aiProvider === 'grok' ? grokApiKey : openAiApiKey);
     if (!activeKey) {
       setError(`Sua API Key da ${aiProvider.toUpperCase()} não está configurada! Vá em Configurações Globais.`);
       return;
@@ -172,7 +174,7 @@ export default function App() {
   };
 
   const handleGenerate = async () => {
-    const activeKey = aiProvider === 'gemini' ? geminiApiKey : openAiApiKey;
+    const activeKey = aiProvider === 'gemini' ? geminiApiKey : (aiProvider === 'grok' ? grokApiKey : openAiApiKey);
     if (!activeKey) {
       setError(`Sua API Key da ${aiProvider.toUpperCase()} não está configurada! Vá em Configurações Globais.`);
       return;
@@ -266,7 +268,7 @@ export default function App() {
   };
 
   const workflowInfo = getWorkflowInfo();
-  const providerLabel = aiProvider === 'gemini' ? 'Gemini 1.5' : 'GPT-4o';
+  const providerLabel = aiProvider === 'gemini' ? 'Gemini 1.5' : (aiProvider === 'grok' ? 'Grok-2' : 'GPT-4o');
 
   return (
     <div className="app-container">
@@ -328,6 +330,13 @@ export default function App() {
                 <h3>OpenAI (GPT-4o)</h3>
                 <p>Melhor compreensão visual do mercado e aderência aos prompts gerados.</p>
               </div>
+              <div 
+                className={`provider-card ${aiProvider === 'grok' ? 'active' : ''}`}
+                onClick={() => setAiProvider('grok')}
+              >
+                <h3>xAI (Grok-2)</h3>
+                <p>IA liberal e permissiva. Excelente para prompts sem restrições rígidas (NSFW).</p>
+              </div>
             </div>
 
             <div className="form-group">
@@ -378,6 +387,31 @@ export default function App() {
               </div>
               {testStatus.openai === 'success' && <p style={{color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem'}}>Conexão bem-sucedida!</p>}
               {testError.openai && <p style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem'}}>{testError.openai}</p>}
+            </div>
+
+            <div className="form-group" style={{marginTop: '2rem'}}>
+              <label className="form-label">xAI API Key (Grok-2 Vision)</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showApiKey ? "text" : "password"} 
+                  className="form-input" 
+                  style={{ paddingRight: '2.5rem' }}
+                  placeholder="xai-..." 
+                  value={grokApiKey}
+                  onChange={(e) => setGrokApiKey(e.target.value)}
+                />
+                <button type="button" className="eye-btn" onClick={() => setShowApiKey(!showApiKey)}>
+                  {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                <a href="https://console.x.ai" target="_blank" rel="noopener noreferrer" className="api-key-link">Obter chave da xAI (Grok) ↗</a>
+                <button className="btn-extract" onClick={() => handleTestConnection('grok')} disabled={testStatus.grok === 'loading'}>
+                  {testStatus.grok === 'loading' ? <RefreshCw size={14} className="spin" /> : <Wifi size={14} />} Salvar e Testar
+                </button>
+              </div>
+              {testStatus.grok === 'success' && <p style={{color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem'}}>Conexão bem-sucedida!</p>}
+              {testError.grok && <p style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem'}}>{testError.grok}</p>}
             </div>
 
             <div className="form-group" style={{marginTop: '2rem'}}>
