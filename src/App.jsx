@@ -93,8 +93,15 @@ export default function App() {
   useEffect(() => { localStorage.setItem('model_name', modelName); }, [modelName]);
   useEffect(() => { localStorage.setItem('model_desc', modelDesc); }, [modelDesc]);
   useEffect(() => { 
-    if (modelImage) localStorage.setItem('model_image', modelImage); 
-    else localStorage.removeItem('model_image');
+    if (modelImage) {
+      try {
+        localStorage.setItem('model_image', modelImage);
+      } catch (e) {
+        console.warn("A imagem é grande demais para ser salva no cache do navegador.");
+      }
+    } else {
+      localStorage.removeItem('model_image');
+    }
   }, [modelImage]);
   useEffect(() => { localStorage.setItem('gemini_api_key', geminiApiKey); }, [geminiApiKey]);
   useEffect(() => { localStorage.setItem('openai_api_key', openAiApiKey); }, [openAiApiKey]);
@@ -109,8 +116,8 @@ export default function App() {
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      alert("A imagem é muito grande. Escolha uma menor que 4MB.");
+    if (file.size > 15 * 1024 * 1024) {
+      alert("A imagem é muito grande. Escolha uma menor que 15MB.");
       return;
     }
     const reader = new FileReader();
