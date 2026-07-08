@@ -32,7 +32,7 @@ export async function testConnection({ apiKey, aiProvider }) {
   } else if (aiProvider === 'openai' || aiProvider === 'grok') {
     try {
       const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
-      const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o-mini";
+      const modelName = aiProvider === 'grok' ? "grok-latest" : "gpt-4o-mini";
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -85,7 +85,7 @@ Responda APENAS com a descrição contínua. Não use tópicos ou listas, escrev
         return response.text().trim();
     } else if (aiProvider === 'openai' || aiProvider === 'grok') {
         const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
-        const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o";
+        const modelName = aiProvider === 'grok' ? "grok-latest" : "gpt-4o";
 
         const response = await fetch(apiUrl, {
             method: "POST",
@@ -189,7 +189,7 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
       
   } else if (aiProvider === 'openai' || aiProvider === 'grok') {
       const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
-      const modelName = aiProvider === 'grok' ? "grok-2-vision-1212" : "gpt-4o";
+      const modelName = aiProvider === 'grok' ? "grok-latest" : "gpt-4o";
       
       const content = [
           { type: "text", text: finalSystemInstruction }
