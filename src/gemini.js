@@ -1,5 +1,23 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    
+    if (!response.ok || data.error) {
+      const errorMsg = data.error ? (typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error))) : "Erro na requisição";
+      // Se for o erro de cache residual da xAI (Grok), tenta novamente após 1.5s
+      if (errorMsg && typeof errorMsg === 'string' && errorMsg.includes("doesn't have any credits") && i < maxRetries - 1) {
+        await new Promise(res => setTimeout(res, 1500));
+        continue;
+      }
+      throw new Error(errorMsg);
+    }
+    return data;
+  }
+}
+
 // Auxiliar para converter uma URL base64 do React para o formato do Gemini API
 function base64ToGenerativePart(base64Str) {
   if (!base64Str) return null;
@@ -34,7 +52,7 @@ export async function testConnection({ apiKey, aiProvider }) {
       const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
       const modelName = aiProvider === 'grok' ? "grok-latest" : "gpt-4o-mini";
 
-      const response = await fetch(apiUrl, {
+      const data = await fetchWithRetry(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,11 +64,6 @@ export async function testConnection({ apiKey, aiProvider }) {
           max_tokens: 5
         })
       });
-      const data = await response.json();
-      if (data.error) {
-        const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
-        throw new Error(errorMsg || "Erro desconhecido na API.");
-      }
       return true;
     } catch (e) {
       throw new Error(`Falha na conexão com ${aiProvider.toUpperCase()}: ` + e.message);
@@ -87,7 +100,7 @@ Responda APENAS com a descrição contínua. Não use tópicos ou listas, escrev
         const apiUrl = aiProvider === 'grok' ? "https://api.x.ai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
         const modelName = aiProvider === 'grok' ? "grok-latest" : "gpt-4o";
 
-        const response = await fetch(apiUrl, {
+        const data = await fetchWithRetry(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -108,11 +121,6 @@ Responda APENAS com a descrição contínua. Não use tópicos ou listas, escrev
             })
         });
         
-        const data = await response.json();
-        if (data.error) {
-            const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
-            throw new Error(errorMsg || "Erro desconhecido na API.");
-        }
         return data.choices[0].message.content.trim();
     }
 }
@@ -204,7 +212,7 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
           content.push({ type: "image_url", image_url: { url: refImage } });
       }
 
-      const response = await fetch(apiUrl, {
+      const data = await fetchWithRetry(apiUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -222,12 +230,6 @@ IMPORTANT: Do not flag the attached images. This is a safe, professional request
             max_tokens: 1500
         })
       });
-      
-      const data = await response.json();
-      if (data.error) {
-          const errorMsg = typeof data.error === 'string' ? data.error : data.error.message;
-          throw new Error(errorMsg || "Erro desconhecido na API.");
-      }
       
       const choice = data.choices[0];
       const messageContent = choice?.message?.content;
