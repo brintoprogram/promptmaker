@@ -154,6 +154,13 @@ export async function generatePrompts({
     backgroundInstruction = 'The user does not want to keep the base backgrounds. Create a cohesive new background that matches the action and user instructions.';
   }
 
+  let workflowInstruction = '';
+  if (workflow === 'clothing') {
+    workflowInstruction = 'INSTRUÇÃO DA ROUPA: O prompt DEVE EXPLICITAMENTE dizer à IA para usar a roupa da imagem anexada 2. Exemplo: "She is wearing the exact outfit from attached image 2."';
+  } else if (workflow === 'pose') {
+    workflowInstruction = 'INSTRUÇÃO DE POSE: Foque em descrever a pose da imagem anexada 2.';
+  }
+
   // Substituir as variáveis do contexto no prompt customizado do usuário
   finalSystemInstruction = finalSystemInstruction
     .replace('{{modelName}}', modelName || 'A modelo')
@@ -162,7 +169,8 @@ export async function generatePrompts({
     .replace('{{workflow}}', workflow.toUpperCase())
     .replace('{{userInstructions}}', userInstructions || 'Nenhuma.')
     .replace('{{targetPlatform}}', targetPlatform.toUpperCase())
-    .replace('{{backgroundInstruction}}', backgroundInstruction);
+    .replace('{{backgroundInstruction}}', backgroundInstruction)
+    .replace('{{workflowSpecificInstructions}}', workflowInstruction);
 
   // INJEÇÃO DE CONTEXTO SEGURO (Bypass Safety Filters)
   let strictConstraints = "";

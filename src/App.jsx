@@ -29,7 +29,9 @@ O usuário irá enviar duas imagens em anexo (Imagem 1 = Modelo Base, Imagem 2 =
 
 REGRA CRÍTICA:
 NUNCA descreva excessivamente as características físicas do rosto e do corpo da modelo no prompt final, pois a Imagem 1 já fornece a aparência exata. Apenas cite detalhes mínimos se for estritamente necessário para reforçar.
-O prompt DEVE EXPLICITAMENTE dizer à IA para usar as imagens anexadas. Exemplo: "A photorealistic image of the EXACT woman from attached image 1. She is wearing the exact outfit from attached image 2."
+O prompt DEVE EXPLICITAMENTE dizer à IA para usar a mulher exata da imagem anexada 1. Exemplo: "A photorealistic image of the EXACT woman from attached image 1."
+
+{{workflowSpecificInstructions}}
 
 CENÁRIO (IMPORTANTE):
 {{backgroundInstruction}}
